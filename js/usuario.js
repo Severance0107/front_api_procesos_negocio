@@ -230,13 +230,6 @@ function registerForm(auth=false){
             </div>
               
             <form action="" method="post" id="myFormReg">
-                <input type="hidden" name="id" id="id">
-                <label for="nombre" class="form-label">First Name</label>
-                <input type="text" class="form-control" name="nombre" id="nombre" required> <br>
-                <label for="apellidos"  class="form-label">Last Name</label>
-                <input type="text" class="form-control" name="apellidos" id="apellidos" required> <br>
-                <label for="documento"  class="form-label">document</label>
-                <input type="text" class="form-control" name="documento" id="documento" required> <br>
                 <label for="correo" class="form-label">correo</label>
                 <input type="correo" class="form-control" name="correo" id="correo" required> <br>
                 <label for="password" class="form-label">Password</label>
@@ -298,7 +291,7 @@ function validaToken(){
 }
 
 
-// Para articulos
+// -------------------------------------------------------------------------- Para articulos
 
 function listarArticulos(){
     validaToken();
@@ -319,7 +312,7 @@ function listarArticulos(){
                     <h1 class="display-5"><i class="fa-solid fa-list"></i> Listado de articulos</h1>
                 </div>
                   
-                <a href="#" onclick="registerForm('true')" class="btn btn-outline-success"><i class="fa-solid fa-user-plus"></i></a>
+                <a href="#" onclick="registerFormArticle('true')" class="btn btn-outline-success"><i class="fa-solid fa-user-plus"></i></a>
                 <table class="table">
                     <thead>
                         <tr>
@@ -345,8 +338,8 @@ function listarArticulos(){
                             <th>${articulo.nombre}</th>
                             <th>${articulo.codigo}</th>
                             <th>${articulo.descripcion}</th>
-                            <th>${articulo.fechaResgistro}</th>
-                            <th>${articulo.categoria}</th>
+                            <th>${articulo.fechaRegistro}</th>
+                            <th>${articulo.categoria.nombre}</th>
                             <th>${articulo.stock}</th>
                             <th>${articulo.precio_compra}</th>
                             <th>${articulo.precio_venta}</th>
@@ -374,5 +367,307 @@ function listarArticulos(){
             `;
             document.getElementById("datos").innerHTML = articulos;
 
+    })
+}
+
+function registerFormArticle(auth=false){
+    cadena = `
+            <div class="p-3 mb-2 bg-light text-dark">
+                <h1 class="display-5"><i class="fa-solid fa-user-pen"></i> Registrar articulo</h1>
+            </div>
+              
+            <form action="" method="post" id="myFormReg">
+                <input type="hidden" name="id" id="id">
+                <label for="nombre" class="form-label">Nombre</label>
+                <input type="text" class="form-control" name="nombre" id="nombre" required> <br>
+                <label for="codigo"  class="form-label">codigo</label>
+                <input type="text" class="form-control" name="codigo" id="codigo" required> <br>
+                <label for="descripcion"  class="form-label">Descripcion</label>
+                <input type="text" class="form-control" name="descripcion" id="descripcion" required> <br>
+                <label for="fechaRegistro" class="form-label">Fecha de Registro</label>
+                <input type="text" class="form-control" name="fechaRegistro" id="fechaRegistro" required> <br>
+                <label for="categoria" class="form-label">Categoria</label>
+                <input type="text" class="form-control" id="categoria" name="categoria" required> <br>
+                
+                <label for="stock" class="form-label">Stock</label>
+                <input type="number" class="form-control" id="stock" name="stock" required> <br>
+                <label for="precio_compra" class="form-label">Precio de compra</label>
+                <input type="number" class="form-control" id="precio_compra" name="precio_compra" required> <br>
+                <label for="precio_venta" class="form-label">Precio de venta</label>
+                <input type="number" class="form-control" id="precio_venta" name="precio_venta" required> <br>
+
+                <button type="button" class="btn btn-outline-info" onclick="registrarArticulo('${auth}')">Registrar</button>
+            </form>`;
+            document.getElementById("registro").innerHTML = cadena;
+            var myModal = new bootstrap.Modal(document.getElementById('modalUsuario'))
+            myModal.toggle();
+}
+
+async function registrarArticulo(auth=false){
+    validaToken();
+    var myForm = document.getElementById("myFormReg");
+    var formData = new FormData(myForm);
+    var jsonData = {};
+    for(var [k, v] of formData){//convertimos los datos a json
+        jsonData[k] = v;
+    }
+    var categoria = jsonData.categoria
+    jsonData.categoria = {
+        id: categoria 
+    }
+    console.log("data user ",jsonData);
+
+    const request = await fetch(urlApi+"/articulo", {
+        method: 'POST',
+        headers:{
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': localStorage.token
+        },
+        body: JSON.stringify(jsonData)
+    })
+    .then(response => response.json())
+    .then(function(respuesta){
+        console.log("respuesta peticion", respuesta)
+    });
+    if(auth){
+        listarArticulos();
+    }
+    alertas("Se ha registrado el articulo exitosamente!",1)
+    //document.getElementById("contentModal").innerHTML = '';
+    var myModalEl = document.getElementById('modalUsuario')
+    var modal = bootstrap.Modal.getInstance(myModalEl) // Returns a Bootstrap modal instance
+    modal.hide();
+}
+
+function eliminaArticulo(codigo){
+    validaToken();
+    var settings={
+        method: 'DELETE',
+        headers:{
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': localStorage.token
+        },
+    }
+    fetch(urlApi+"/articulo/"+codigo,settings)
+    .then((data) => {
+        console.log(data); // JSON data parsed by `data.json()` call
+        listarArticulos();
+        alertas("Se ha eliminado el Articulo exitosamente!",2)
+      })
+}
+
+function verModificarArticulo(codigo){
+    validaToken();
+    var settings={
+        method: 'GET',
+        headers:{
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': localStorage.token
+        },
+    }
+    fetch(urlApi+"/articulo/"+codigo,settings)
+    .then(response => response.json())
+    .then(function(usuario){
+            var cadena='';
+            if(usuario){                
+                cadena = `
+                <div class="p-3 mb-2 bg-light text-dark">
+                    <h1 class="display-5"><i class="fa-solid fa-user-pen"></i> Modificar Articulo</h1>
+                </div>
+              
+                <form action="" method="post" id="myForm">
+
+
+
+                    <input type="hidden" name="id" id="id" value="${usuario.id}">
+                    <label for="nombre" class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="nombre" id="nombre" value="${usuario.nombre}" required> <br>
+                    <label for="codigo"  class="form-label">codigo</label>
+                    <input type="text" class="form-control" name="codigo" id="codigo" value="${usuario.codigo}" required> <br>
+                    <label for="descripcion"  class="form-label">Descripcion</label>
+                    <input type="text" class="form-control" name="descripcion" id="descripcion" value="${usuario.descripcion}" required> <br>
+                    <label for="fechaRegistro" class="form-label">Fecha de Registro</label>
+                    <input type="text" class="form-control" name="fechaRegistro" id="fechaRegistro" value="${usuario.fechaResgistro}" required> <br>
+                    <label for="categoria" class="form-label">Categoria</label>
+                    <input type="text" class="form-control" id="categoria" name="categoria" value="${usuario.categoria.id}" required> <br>
+                    
+                    <label for="stock" class="form-label">Stock</label>
+                    <input type="number" class="form-control" id="stock" name="stock" value="${usuario.stock}" required> <br>
+                    <label for="precio_compra" class="form-label">Precio de compra</label>
+                    <input type="number" class="form-control" id="precio_compra" name="precio_compra" value="${usuario.precio_compra}" required> <br>
+                    <label for="precio_venta" class="form-label">Precio de venta</label>
+                    <input type="number" class="form-control" id="precio_venta" name="precio_venta" value="${usuario.precio_venta}" required> <br>
+
+                    <button type="button" class="btn btn-outline-warning" 
+                        onclick="modificarArticulo('${usuario.id}')">Modificar
+                    </button>
+                </form>`;
+            }
+            document.getElementById("contentModal").innerHTML = cadena;
+            var myModal = new bootstrap.Modal(document.getElementById('modalUsuario'))
+            myModal.toggle();
+    })
+}
+
+async function modificarArticulo(codigo){
+    validaToken();
+    var myForm = document.getElementById("myForm");
+    var formData = new FormData(myForm);
+    var jsonData = {};
+    for(var [k, v] of formData){//convertimos los datos a json
+        jsonData[k] = v;
+    }
+    const request = await fetch(urlApi+"/usuario/"+codigo, {
+        method: 'PUT',
+        headers:{
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': localStorage.token
+        },
+        body: JSON.stringify(jsonData)
+    });
+    listarArticulos();
+    alertas("Se ha modificado el articulo exitosamente!",1)
+    document.getElementById("contentModal").innerHTML = '';
+    var myModalEl = document.getElementById('modalUsuario')
+    var modal = bootstrap.Modal.getInstance(myModalEl) // Returns a Bootstrap modal instance
+    modal.hide();
+}
+
+
+// Modificar Articulo
+
+function verModificarArticulo(codigo){
+    validaToken();
+    var settings={
+        method: 'GET',
+        headers:{
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': localStorage.token
+        },
+    }
+    fetch(urlApi+"/articulo/codigo/"+codigo,settings)
+    .then(response => response.json())
+    .then(function(articulo){
+            var cadena='';
+            if(articulo){                
+                cadena = `
+                <div class="p-3 mb-2 bg-light text-dark">
+                    <h1 class="display-5"><i class="fa-solid fa-user-pen"></i> Modificar articulo</h1>
+                </div>
+              
+                <form action="" method="post" id="myForm">
+                <input type="hidden" name="id" id="id" value="${articulo.id}">
+                <label for="nombre" class="form-label">Nombre</label>
+                <input type="text" class="form-control" name="nombre" id="nombre" value="${articulo.nombre}" required> <br>
+                <label for="codigo"  class="form-label">codigo</label>
+                <input type="text" class="form-control" name="codigo" id="codigo" value="${articulo.codigo}" required> <br>
+                <label for="descripcion"  class="form-label">Descripcion</label>
+                <input type="text" class="form-control" name="descripcion" id="descripcion" value="${articulo.descripcion}" required> <br>
+                <label for="fechaRegistro" class="form-label">Fecha de Registro</label>
+                <input type="text" class="form-control" name="fechaRegistro" id="fechaRegistro" value="${articulo.fechaRegistro}" required> <br>
+                <label for="categoria" class="form-label">Categoria</label>
+                <input type="text" class="form-control" id="categoria" name="categoria" value="${articulo.categoria.id}" required> <br>
+                
+                <label for="stock" class="form-label">Stock</label>
+                <input type="number" class="form-control" id="stock" name="stock" value="${articulo.stock}" required> <br>
+                <label for="precio_compra" class="form-label">Precio de compra</label>
+                <input type="number" class="form-control" id="precio_compra" name="precio_compra" value="${articulo.precio_compra}" required> <br>
+                <label for="precio_venta" class="form-label">Precio de venta</label>
+                <input type="number" class="form-control" id="precio_venta" name="precio_venta" value="${articulo.precio_venta}" required> <br>
+                    <button type="button" class="btn btn-outline-warning" 
+                        onclick="modificarArticulo('${articulo.codigo}')">Modificar
+                    </button>
+                </form>`;
+            }
+            document.getElementById("registro").innerHTML = cadena;
+            var myModal = new bootstrap.Modal(document.getElementById('modalUsuario'))
+            myModal.toggle();
+    })
+}
+
+async function modificarArticulo(codigo){
+    validaToken();
+    var myForm = document.getElementById("myForm");
+    var formData = new FormData(myForm);
+    var jsonData = {};
+    for(var [k, v] of formData){//convertimos los datos a json
+        jsonData[k] = v;
+    }
+    var categoria = jsonData.categoria
+    jsonData.categoria = {
+        id: categoria 
+    }
+    const request = await fetch(urlApi+"/articulo/"+codigo, {
+        method: 'PUT',
+        headers:{
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': localStorage.token
+        },
+        body: JSON.stringify(jsonData)
+    });
+    listarArticulos();
+    alertas("Se ha modificado el Articulo exitosamente!",1)
+    document.getElementById("contentModal").innerHTML = '';
+    var myModalEl = document.getElementById('modalUsuario')
+    var modal = bootstrap.Modal.getInstance(myModalEl) // Returns a Bootstrap modal instance
+    modal.hide();
+}
+
+//Ver Articulo
+function verArticulo(codigo){
+    validaToken();
+    var settings={
+        method: 'GET',
+        headers:{
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': localStorage.token
+        },
+    }
+    fetch(urlApi+"/articulo/codigo/"+codigo,settings)
+    .then(response => response.json())
+    .then(function(usuario){
+            var cadena='';
+            if(usuario){                
+                cadena = `
+                <div class="p-3 mb-2 bg-light text-dark">
+                    <h1 class="display-5"><i class="fa-solid fa-user-pen"></i> Modificar Articulo</h1>
+                </div>
+              
+                <form action="" method="post" id="myForm">
+
+
+
+                    <input type="hidden" name="id" id="id" value="${usuario.id}">
+                    <label for="nombre" class="form-label">Nombre</label>
+                    <input type="text" class="form-control" name="nombre" id="nombre" value="${usuario.nombre}" required> <br>
+                    <label for="codigo"  class="form-label">codigo</label>
+                    <input type="text" class="form-control" name="codigo" id="codigo" value="${usuario.codigo}" required> <br>
+                    <label for="descripcion"  class="form-label">Descripcion</label>
+                    <input type="text" class="form-control" name="descripcion" id="descripcion" value="${usuario.descripcion}" required> <br>
+                    <label for="fechaRegistro" class="form-label">Fecha de Registro</label>
+                    <input type="text" class="form-control" name="fechaRegistro" id="fechaRegistro" value="${usuario.fechaResgistro}" required> <br>
+                    <label for="categoria" class="form-label">Categoria</label>
+                    <input type="text" class="form-control" id="categoria" name="categoria" value="${usuario.categoria.id}" required> <br>
+                    
+                    <label for="stock" class="form-label">Stock</label>
+                    <input type="number" class="form-control" id="stock" name="stock" value="${usuario.stock}" required> <br>
+                    <label for="precio_compra" class="form-label">Precio de compra</label>
+                    <input type="number" class="form-control" id="precio_compra" name="precio_compra" value="${usuario.precio_compra}" required> <br>
+                    <label for="precio_venta" class="form-label">Precio de venta</label>
+                    <input type="number" class="form-control" id="precio_venta" name="precio_venta" value="${usuario.precio_venta}" required> <br>
+
+                    <button type="button" class="btn btn-outline-warning" data-bs-dismiss="modal" aria-label="Close">Cerrar</button>
+                </form>`;
+            }
+            document.getElementById("registro").innerHTML = cadena;
+            var myModal = new bootstrap.Modal(document.getElementById('modalUsuario'))
+            myModal.toggle();
     })
 }
